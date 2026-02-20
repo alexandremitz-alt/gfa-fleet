@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
@@ -814,6 +815,25 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     }
 
 # ==================== SETUP ====================
+
+# Download endpoints (public)
+@api_router.get("/download/{filename}")
+async def download_file(filename: str):
+    """Download deploy files"""
+    allowed_files = ["frontend-hostgator.zip", "backend-railway.zip", "gfa-fleet-deploy.zip", "INSTRUCOES.md"]
+    if filename not in allowed_files:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    file_path = Path(__file__).parent / "downloads" / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    media_type = "application/zip" if filename.endswith(".zip") else "text/markdown"
+    return FileResponse(
+        path=str(file_path),
+        filename=filename,
+        media_type=media_type
+    )
 
 app.include_router(api_router)
 
